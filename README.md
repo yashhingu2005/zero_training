@@ -1,135 +1,139 @@
-# Template for Isaac Lab Projects
+# Training ZERO in Isaac Lab
 
-## Overview
+This repository documents the workflow I used to train my custom quadruped robot, **ZERO**, using Isaac Lab. The goal is to provide a straightforward pipeline that others can follow, from a Fusion 360 CAD model to a trained reinforcement learning policy.
 
-This project/repository serves as a template for building projects or extensions based on Isaac Lab.
-It allows you to develop in an isolated environment, outside of the core Isaac Lab repository.
+> **Note:** This is the workflow that worked for me. There are other ways to achieve the same result, but the resources below are the ones I personally used.
 
-**Key Features:**
+---
 
-- `Isolation` Work outside the core Isaac Lab repository, ensuring that your development efforts remain self-contained.
-- `Flexibility` This template is set up to allow your code to be run as an extension in Omniverse.
+## Workflow
 
-**Keywords:** extension, template, isaaclab
-
-## Installation
-
-- Install Isaac Lab by following the [installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html).
-  We recommend using the conda or uv installation as it simplifies calling Python scripts from the terminal.
-
-- Clone or copy this project/repository separately from the Isaac Lab installation (i.e. outside the `IsaacLab` directory):
-
-- Using a python interpreter that has Isaac Lab installed, install the library in editable mode using:
-
-    ```bash
-    # use 'PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-    python -m pip install -e source/zero_training
-
-- Verify that the extension is correctly installed by:
-
-    - Listing the available tasks:
-
-        Note: It the task name changes, it may be necessary to update the search pattern `"Template-"`
-        (in the `scripts/list_envs.py` file) so that it can be listed.
-
-        ```bash
-        # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-        python scripts/list_envs.py
-        ```
-
-    - Running a task:
-
-        ```bash
-        # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-        python scripts/<RL_LIBRARY>/train.py --task=<TASK_NAME>
-        ```
-
-    - Running a task with dummy agents:
-
-        These include dummy agents that output zero or random agents. They are useful to ensure that the environments are configured correctly.
-
-        - Zero-action agent
-
-            ```bash
-            # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-            python scripts/zero_agent.py --task=<TASK_NAME>
-            ```
-        - Random-action agent
-
-            ```bash
-            # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
-            python scripts/random_agent.py --task=<TASK_NAME>
-            ```
-
-### Set up IDE (Optional)
-
-To setup the IDE, please follow these instructions:
-
-- Run VSCode Tasks, by pressing `Ctrl+Shift+P`, selecting `Tasks: Run Task` and running the `setup_python_env` in the drop down menu.
-  When running this task, you will be prompted to add the absolute path to your Isaac Sim installation.
-
-If everything executes correctly, it should create a file .python.env in the `.vscode` directory.
-The file contains the python paths to all the extensions provided by Isaac Sim and Omniverse.
-This helps in indexing all the python modules for intelligent suggestions while writing code.
-
-### Setup as Omniverse Extension (Optional)
-
-We provide an example UI extension that will load upon enabling your extension defined in `source/zero_training/zero_training/ui_extension_example.py`.
-
-To enable your extension, follow these steps:
-
-1. **Add the search path of this project/repository** to the extension manager:
-    - Navigate to the extension manager using `Window` -> `Extensions`.
-    - Click on the **Hamburger Icon**, then go to `Settings`.
-    - In the `Extension Search Paths`, enter the absolute path to the `source` directory of this project/repository.
-    - If not already present, in the `Extension Search Paths`, enter the path that leads to Isaac Lab's extension directory directory (`IsaacLab/source`)
-    - Click on the **Hamburger Icon**, then click `Refresh`.
-
-2. **Search and enable your extension**:
-    - Find your extension under the `Third Party` category.
-    - Toggle it to enable your extension.
-
-## Code formatting
-
-We have a pre-commit template to automatically format your code.
-To install pre-commit:
-
-```bash
-pip install pre-commit
+```text
+Fusion 360 CAD
+        │
+        ▼
+ Export URDF
+        │
+        ▼
+ Import into Isaac Sim
+        │
+        ▼
+ Convert to USD
+        │
+        ▼
+ Create Robot Configuration
+        │
+        ▼
+ Create Training Environment
+        │
+        ▼
+ Train with Isaac Lab
+        │
+        ▼
+ Trained Policy (.pt)
 ```
 
-Then you can run pre-commit with:
+---
 
-```bash
-pre-commit run --all-files
-```
+# 1. Install Isaac Sim & Isaac Lab
 
-## Troubleshooting
+Start by following NVIDIA's official documentation:
 
-### Pylance Missing Indexing of Extensions
+- Isaac Sim Documentation
+- Isaac Lab Documentation
 
-In some VsCode versions, the indexing of part of the extensions is missing.
-In this case, add the path to your extension in `.vscode/settings.json` under the key `"python.analysis.extraPaths"`.
+The installation process that worked for me is documented here:
 
-```json
-{
-    "python.analysis.extraPaths": [
-        "<path-to-ext-repo>/source/zero_training"
-    ]
-}
-```
+https://github.com/marcelpatrick/IsaacSim-IsaacLab-installation-for-Windows-Easy-Tutorial
 
-### Pylance Crash
+---
 
-If you encounter a crash in `pylance`, it is probable that too many files are indexed and you run out of memory.
-A possible solution is to exclude some of omniverse packages that are not used in your project.
-To do so, modify `.vscode/settings.json` and comment out packages under the key `"python.analysis.extraPaths"`
-Some examples of packages that can likely be excluded are:
+# 2. Export Your Robot from Fusion 360
 
-```json
-"<path-to-isaac-sim>/extscache/omni.anim.*"         // Animation packages
-"<path-to-isaac-sim>/extscache/omni.kit.*"          // Kit UI tools
-"<path-to-isaac-sim>/extscache/omni.graph.*"        // Graph UI tools
-"<path-to-isaac-sim>/extscache/omni.services.*"     // Services tools
-...
-```
+The original Fusion2URDF exporter is no longer compatible with newer versions of Fusion 360.
+
+I used this updated fork instead:
+
+https://github.com/yashhingu2005/fusion2urdf_for_updated_fusion
+
+Basic process:
+
+- Finish your CAD model.
+- Add and configure all joints.
+- Verify joint limits and joint axes.
+- Name all links and joints clearly.
+- Export the robot as a URDF.
+
+---
+
+# 3. Import into Isaac Sim
+
+- Import the exported URDF.
+- Verify that all joints move correctly.
+- Check joint orientations.
+- Adjust collisions if necessary.
+- Save the robot as a USD asset.
+
+---
+
+# 4. Isaac Lab Setup
+
+After creating the USD asset:
+
+- Create the robot configuration (`*_cfg.py`).
+- Create the training environment.
+- Configure observations.
+- Configure actions.
+- Implement rewards.
+- Configure the PPO training parameters.
+
+---
+
+# 5. Training Checklist
+
+Before starting training, I recommend checking the following:
+
+- [ ] Robot imports successfully.
+- [ ] All joints move correctly.
+- [ ] Joint limits are correct.
+- [ ] Robot stands without instability.
+- [ ] Collision meshes are correct.
+- [ ] Self-collisions behave as expected.
+- [ ] Actuator settings are configured.
+- [ ] Robot configuration is complete.
+- [ ] Environment configuration is complete.
+- [ ] Reward function is implemented.
+- [ ] Observations are implemented.
+- [ ] Actions are implemented.
+- [ ] Reset logic works.
+- [ ] PPO configuration is complete.
+
+---
+
+# 6. Train the Policy
+
+Run the Isaac Lab training command for your environment.
+
+Training checkpoints and logs will automatically be saved in the `logs/` directory.
+
+---
+
+# Learning Resources
+
+The main inspiration for this project was Lychee AI's excellent Isaac Lab tutorials.
+
+YouTube Channel:
+https://www.youtube.com/@LycheeAI
+
+Video:
+https://youtu.be/tQziqSx-F80
+
+---
+
+# Acknowledgements
+
+- NVIDIA Isaac Sim
+- NVIDIA Isaac Lab
+- Lychee AI
+- Fusion2URDF
+- Everyone contributing to open-source robotics ❤️
