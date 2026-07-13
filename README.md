@@ -115,6 +115,7 @@ Before starting training, I recommend checking the following:
 Run the Isaac Lab training command for your environment.
 
 Training checkpoints and logs will automatically be saved in the `logs/` directory.
+<img width="948" height="578" alt="Recording 2026-07-14 011459" src="https://github.com/user-attachments/assets/53bf691b-9b1b-49b2-b778-045baa8e2ba0" />
 
 ---
 
